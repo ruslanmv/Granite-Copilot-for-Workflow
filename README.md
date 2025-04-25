@@ -5,7 +5,7 @@
 
 ## 1. What it is  
 **Granite-Copilot-for-Workflow (GCW)** turns IBM’s open, enterprise-grade **Granite** foundation models into a “copilot” that*plans → executes → verifies → corrects* every step of a business or DevOps workflow.  
-Granite supplies the natural-language reasoning; a mesh of containerised agents (build, test, security, compliance, doc-gen …) supply deterministic checks; the orchestrator keeps looping until everything is green or a human signs off. The result is hands-free pipelines with auditable AI guard-rails. Granite models are available open-source on GitHub and watsonx.ai under Apache-2.0 licences  ([IBM Granite - GitHub](https://github.com/ibm-granite?utm_source=chatgpt.com), [Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models?utm_source=chatgpt.com)).
+Granite supplies the natural-language reasoning; a mesh of containerised agents (build, test, security, compliance, doc-gen …) supply deterministic checks; the orchestrator keeps looping until everything is green or a human signs off. The result is hands-free pipelines with auditable AI guard-rails. Granite models are available open-source on GitHub and watsonx.ai under Apache-2.0 licences  ([IBM Granite - GitHub](https://github.com/ibm-granite), [Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models)).
 
 ---
 
@@ -87,7 +87,7 @@ granite-copilot-workflow/
 
 ```bash
 # 1. Clone and configure
-git clone https://github.com/your-org/granite-copilot-workflow.git
+git clone https://github.com/ruslanmv/granite-copilot-workflow.git
 cd granite-copilot-workflow
 cp .env.template .env             # add WATSONX_APIKEY etc.
 
