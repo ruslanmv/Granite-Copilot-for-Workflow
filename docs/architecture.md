@@ -42,17 +42,37 @@ This document describes the high-level architecture of Granite Copilot for Workf
 
 ```mermaid
 flowchart LR
-  UserUI[User Interface<br/>React] -- "Plan workflow" --> Orchestrator
-  Orchestrator -- publish plan --> NATS
-  NATS -- subscribe --> PlannerAgent
-  PlannerAgent -- DAG JSON --> NATS
-  Orchestrator -- dispatch tasks --> NATS
-  NATS -- triggers --> BuildAgent & TestAgent & SecurityAgent
-  Agents -- results --> NATS
-  Orchestrator -- gather results --> GraphTracer --> Neo4j
-  Orchestrator -- if failures --> AutoFixAgent
-  AutoFixAgent -- patches --> NATS --> re-run agents
-  Orchestrator -- on success --> DocAgent & ObserverAgent
-  ObserverAgent -- notifications --> Slack / UI
-  
+  %% --------  core workflow  --------
+  UserUI[User Interface<br/>React] -- "plan workflow" --> Orchestrator
+  Orchestrator -- "publish plan" --> NATS
+  NATS -- "subscribe" --> PlannerAgent
+  PlannerAgent -- "DAG JSON" --> NATS
+  Orchestrator -- "dispatch tasks" --> NATS
+
+  %% --------  task agents  --------
+  NATS -- "triggers" --> BuildAgent
+  NATS -- "triggers" --> TestAgent
+  NATS -- "triggers" --> SecurityAgent
+
+  BuildAgent -- "results" --> NATS
+  TestAgent  -- "results" --> NATS
+  SecurityAgent -- "results" --> NATS
+
+  %% --------  graph + DB  --------
+  Orchestrator -- "gather results" --> GraphTracer
+  GraphTracer -- "write graph" --> Neo4j
+
+  %% --------  autofix loop  --------
+  Orchestrator -- "if failures" --> AutoFixAgent
+  AutoFixAgent -- "patches" --> NATS
+  AutoFixAgent -- "re-run" --> BuildAgent
+  AutoFixAgent -- "re-run" --> TestAgent
+  AutoFixAgent -- "re-run" --> SecurityAgent
+
+  %% --------  success path  --------
+  Orchestrator -- "on success" --> DocAgent
+  Orchestrator -- "on success" --> ObserverAgent
+  ObserverAgent -- "notifications" --> SlackUI[Slack / UI]
+
+
 ```
