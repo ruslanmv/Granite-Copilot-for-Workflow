@@ -234,4 +234,4 @@ Apache 2.0 (same as Granite models)  ([Foundation Models - IBM watsonx.ai](https
 
 ### Recap  
 
-*GCW* gives you a **chat-based autopilot** that converts business intent into safe, documented, self-healing automation. Clone, set your Granite credentials, spin up Docker, and start shipping workflows that verify themselves before you hit *prod*. Happy automating! 🚀
+*GCW* gives you a **chat-based autopilot** that converts business intent into safe, documented, self-healing automation. Clone, set your Granite credentials, spin up Docker, and start shipping workflows that verify themselves before you hit *prod*. 
