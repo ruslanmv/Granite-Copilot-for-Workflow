@@ -27,7 +27,7 @@ You **should not** use GCW as a generic chat bot or data-science notebook; it is
 ## 3 . First-run (Laptop)
 ```bash
 # Clone
-git clone https://github.com/<your-org>/granite-copilot-workflow.git
+git clone https://github.com/ruslanmv/granite-copilot-workflow.git
 cd granite-copilot-workflow
 
 # Configure
