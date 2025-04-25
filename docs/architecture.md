@@ -54,3 +54,4 @@ flowchart LR
   AutoFixAgent -- patches --> NATS --> re-run agents
   Orchestrator -- on success --> DocAgent & ObserverAgent
   ObserverAgent -- notifications --> Slack / UI
+```
