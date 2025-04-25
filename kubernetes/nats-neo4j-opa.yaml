@@ -1,0 +1,197 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: granite-copilot
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats
+  namespace: granite-copilot
+  labels:
+    app: granite-copilot
+    component: nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: granite-copilot
+      component: nats
+  template:
+    metadata:
+      labels:
+        app: granite-copilot
+        component: nats
+    spec:
+      containers:
+        - name: nats
+          image: nats:2.9.22
+          args: ["-js", "--signal", "SIGHUP"]
+          ports:
+            - name: client
+              containerPort: 4222
+            - name: monitor
+              containerPort: 8222
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  namespace: granite-copilot
+  labels:
+    app: granite-copilot
+    component: nats
+spec:
+  ports:
+    - name: client
+      port: 4222
+      targetPort: 4222
+    - name: monitor
+      port: 8222
+      targetPort: 8222
+  selector:
+    app: granite-copilot
+    component: nats
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j
+  namespace: granite-copilot
+  labels:
+    app: granite-copilot
+    component: neo4j
+spec:
+  serviceName: "neo4j"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: granite-copilot
+      component: neo4j
+  template:
+    metadata:
+      labels:
+        app: granite-copilot
+        component: neo4j
+    spec:
+      containers:
+        - name: neo4j
+          image: neo4j:5.12
+          env:
+            - name: NEO4J_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: neo4j-credentials
+                  key: auth
+          ports:
+            - containerPort: 7687
+              name: bolt
+            - containerPort: 7474
+              name: http
+          volumeMounts:
+            - name: neo4j-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: neo4j-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  namespace: granite-copilot
+  labels:
+    app: granite-copilot
+    component: neo4j
+spec:
+  ports:
+    - name: bolt
+      port: 7687
+      targetPort: bolt
+    - name: http
+      port: 7474
+      targetPort: http
+  selector:
+    app: granite-copilot
+    component: neo4j
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: granite-copilot
+  labels:
+    app: granite-copilot
+    component: opa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: granite-copilot
+      component: opa
+  template:
+    metadata:
+      labels:
+        app: granite-copilot
+        component: opa
+    spec:
+      containers:
+        - name: opa
+          image: openpolicyagent/opa:0.52.0
+          args:
+            - "run"
+            - "--server"
+            - "--set=decision_logs.console=true"
+            - "--config-file=/config/opa-config.yaml"
+          ports:
+            - containerPort: 8181
+              name: http
+          volumeMounts:
+            - name: opa-config
+              mountPath: /config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-config
+  namespace: granite-copilot
+data:
+  opa-config.yaml: |
+    services:
+      - name: bundle
+        url: http://localhost:8181
+    bundles:
+      compliance:
+        service: bundle
+        resource: /bundles/compliance.tar.gz
+    decision_logs:
+      console: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  namespace: granite-copilot
+  labels:
+    app: granite-copilot
+    component: opa
+spec:
+  ports:
+    - name: http
+      port: 8181
+      targetPort: 8181
+  selector:
+    app: granite-copilot
+    component: opa

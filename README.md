@@ -4,7 +4,7 @@
 ---
 
 ## 1. What it is  
-**Granite-Copilot-for-Workflow (GCW)** turns IBM’s open, enterprise-grade **Granite** foundation models into a “copilot” that*plans → executes → verifies → corrects* every step of a business or DevOps workflow.  
+**Granite-Copilot-for-Workflow (GCW)** turns IBM’s open, enterprise-grade **Granite** foundation models into a “copilot” that *plans → executes → verifies → corrects* every step of a business or DevOps workflow.  
 Granite supplies the natural-language reasoning; a mesh of containerised agents (build, test, security, compliance, doc-gen …) supply deterministic checks; the orchestrator keeps looping until everything is green or a human signs off. The result is hands-free pipelines with auditable AI guard-rails. Granite models are available open-source on GitHub and watsonx.ai under Apache-2.0 licences  ([IBM Granite - GitHub](https://github.com/ibm-granite), [Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models)).
 
 ---
@@ -40,45 +40,75 @@ Granite supplies the natural-language reasoning; a mesh of containerised agents 
 ```
 granite-copilot-workflow/
 ├── .gitignore
-├── LICENSE                  # Apache-2.0
-├── README.md                # Quick start & docs
-├── docker-compose.yml       # One-command demo stack
-├── .env.template            # Granite & watsonx creds
+├── LICENSE
+├── README.md
+├── docker-compose.yml
+├── .env.template
 ├── orchestrator/
-│   ├── main.py              # FastAPI entrypoint
-│   ├── config.yaml          # Agent routing, thresholds
-│   ├── bus.py               # NATS wrapper
-│   ├── llm_client.py        # Granite & watsonx helpers
-│   └── graph_tracer.py      # Neo4j persistence
+│   ├── main.py
+│   ├── config.yaml
+│   ├── config.py 
+│   ├── bus.py
+│   ├── llm_client.py
+│   └── graph_tracer.py
 ├── agents/
-│   ├── planner_agent/       # Calls Granite, yields DAG
+│   ├── planner_agent/
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
 │   ├── build_agent/
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
 │   ├── test_agent/
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
 │   ├── security_agent/
-│   ├── compliance_agent/    # OPA gatekeeper
-│   ├── doc_agent/           # LLM release-note generator
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   ├── compliance_agent/
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   ├── doc_agent/
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
 │   ├── auto_fix_agent/
-│   └── observer_agent/      # Prom / OTEL exporter
+│   │   ├── agent.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   └── observer_agent/
+│       ├── agent.py
+│       ├── requirements.txt
+│       └── Dockerfile
 ├── frontend/
 │   ├── package.json
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   │   ├── ChatWindow.tsx
-│   │   │   ├── WorkflowDesigner.tsx
-│   │   │   └── LogsViewer.tsx
-│   └── ...
+│   ├── tsconfig.json               
+│   ├── vite.config.ts              
+│   └── src/
+│       ├── App.tsx
+│       └── components/
+│           ├── ChatWindow.tsx
+│           ├── WorkflowDesigner.tsx
+│           └── LogsViewer.tsx
 ├── examples/
-│   ├── nightly_build.yaml   # Sample DAG spec
+│   ├── nightly_build.yaml
 │   └── quickstart.sh
 ├── docs/
 │   ├── architecture.md
 │   ├── extending.md
 │   └── api_reference.md
-└── kubernetes/
-    ├── orchestrator-deployment.yaml
-    ├── agents-statefulset.yaml
-    └── nats-neo4j-opa.yaml
+├── kubernetes/
+│   ├── orchestrator-deployment.yaml
+│   ├── agents-statefulset.yaml
+│   └── nats-neo4j-opa.yaml
+└── policies/                       
+    └── compliance/                 
+        └── policy.rego            
+
 ```
 
 ---
@@ -111,18 +141,26 @@ open http://localhost:3000
 ```yaml
 # orchestrator/config.yaml
 llm:
-  provider: watsonx    # or local
-  model_id: granite-3b-instruct
+  provider: watsonx          # or 'local'
+  model_id: ibm/granite-13b-instruct-v2
+  timeout_secs: 60
+
 bus:
   nats_url: nats://nats:4222
+
 verify_timeouts:
-  build: 600
-  tests: 300
-  security: 400
+  build:     600
+  test:      300
+  security:  400
+  compliance:300
+  doc:       120
+  autofix:   180
+
 graph:
   neo4j_uri: bolt://neo4j:7687
   user: neo4j
   password: neo4j
+
 ```
 
 Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `verify.security.*`.
@@ -178,7 +216,7 @@ Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `ve
 | Q2-2025 | SaaS demo on IBM Cloud · GPT-RAG chat history search |
 | Q3-2025 | Multi-tenant auth, RBAC · Plugin marketplace |
 | Q4-2025 | Agent auto-scaling on K8s HPA · Time-series-driven execution optimisation |
-| 2026    | No-code canvas designer powered by Granite multimodal models  ([IBM Expands Granite Model Family with New Multi-Modal and ...](https://newsroom.ibm.com/2025-02-26-ibm-expands-granite-model-family-with-new-multi-modal-and-reasoning-ai-built-for-the-enterprise?utm_source=chatgpt.com)) |
+| 2026    | No-code canvas designer powered by Granite multimodal models  ([IBM Expands Granite Model Family with New Multi-Modal and ...](https://newsroom.ibm.com/2025-02-26-ibm-expands-granite-model-family-with-new-multi-modal-and-reasoning-ai-built-for-the-enterprise)) |
 
 ---
 
@@ -190,7 +228,7 @@ PRs welcome! Start with `docs/extending.md`, sign the CLA, follow commit style `
 
 ## 13. License  
 
-Apache 2.0 (same as Granite models)  ([Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models?utm_source=chatgpt.com))
+Apache 2.0 (same as Granite models)  ([Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models))
 
 ---
 

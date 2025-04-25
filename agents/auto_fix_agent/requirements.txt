@@ -1,0 +1,3 @@
+ibm-watsonx-ai>=0.1.0
+nats-py>=2.4.0
+python-dotenv>=1.0.0

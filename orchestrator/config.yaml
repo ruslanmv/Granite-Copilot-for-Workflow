@@ -1,0 +1,67 @@
+# orchestrator/config.yaml
+
+# NATS & Neo4j settings
+nats_url: "${NATS_URL}"
+neo4j_uri: "${NEO4J_URI}"
+neo4j_user: "${NEO4J_USER}"
+neo4j_password: "${NEO4J_PASSWORD}"
+
+llm:
+  provider: "watsonx"           # "watsonx" or "local"
+  model_id: "ibm/granite-13b-instruct-v2"
+  timeout_secs: 60
+
+verify_timeouts:
+  build:     600
+  test:      300
+  security:  400
+  compliance: 300
+  doc:       120
+  autofix:   180
+
+agents:
+  - name: planner_agent
+    subject: workflow.plan.request
+    reply_subject: workflow.plan.response
+    image: your-registry/granite-copilot-planner-agent:latest
+
+  - name: build_agent
+    subject: task.docker-build.request
+    image: your-registry/granite-copilot-build-agent:latest
+
+  - name: test_agent
+    subject: task.pytest.request
+    image: your-registry/granite-copilot-test-agent:latest
+
+  - name: security_agent
+    subject: task.snyk.request
+    image: your-registry/granite-copilot-security-agent:latest
+
+  - name: compliance_agent
+    subject: verify.opa.request
+    image: your-registry/granite-copilot-compliance-agent:latest
+
+  - name: doc_agent
+    subject: task.llm-doc.request
+    image: your-registry/granite-copilot-doc-agent:latest
+
+  - name: auto_fix_agent
+    subject: workflow.autofix.request
+    reply_subject: workflow.autofix.response
+    image: your-registry/granite-copilot-auto-fix-agent:latest
+
+  - name: observer_agent
+    subject: workflow.logs.stream
+    image: your-registry/granite-copilot-observer-agent:latest
+
+policy_bundles:
+  - name: compliance
+    path: ./policies/compliance
+
+retry:
+  max_attempts: 2
+  backoff_seconds: 30
+
+logging:
+  level: "INFO"
+  format: "json"

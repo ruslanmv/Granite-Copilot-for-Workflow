@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.env
+
+# Node
+node_modules/
+dist/
+.vscode/
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# Environment files
+.env
+*.env
+
+# IDEs
+.idea/
+*.sublime-project
+*.sublime-workspace
+/backup

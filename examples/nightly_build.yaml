@@ -1,0 +1,35 @@
+# examples/nightly_build.yaml
+name: nightly-acme-api
+schedule: "0 2 * * *"        # Run every night at 02:00 UTC
+tasks:
+  - id: checkout
+    type: git-clone
+    repo: git@github.com:acme/api.git
+    branch: main
+
+  - id: build
+    type: docker-build
+    context: ./api
+    image: registry.acme.local/api:${{ run.id }}
+
+  - id: unit_tests
+    type: pytest
+    needs: [build]
+
+  - id: dep_scan
+    type: snyk
+    target: registry.acme.local/api:${{ run.id }}
+    needs: [build]
+
+  - id: deploy_staging
+    type: helm-upgrade
+    chart: ./chart
+    namespace: staging
+    image_tag: ${{ run.id }}
+    needs: [unit_tests, dep_scan]
+
+  - id: release_notes
+    type: llm-doc
+    template: docs/templates/relnotes.md.j2
+    data_source: github-prs
+    needs: [deploy_staging]

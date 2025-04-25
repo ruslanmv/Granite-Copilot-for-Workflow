@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: agents
+  labels:
+    app: granite-copilot
+    component: agents
+spec:
+  serviceName: "agents"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: granite-copilot
+      component: agents
+  template:
+    metadata:
+      labels:
+        app: granite-copilot
+        component: agents
+    spec:
+      serviceAccountName: agents-sa
+      containers:
+        - name: planner-agent
+          image: your-registry/granite-copilot-planner-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: build-agent
+          image: your-registry/granite-copilot-build-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: test-agent
+          image: your-registry/granite-copilot-test-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: security-agent
+          image: your-registry/granite-copilot-security-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: compliance-agent
+          image: your-registry/granite-copilot-compliance-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: doc-agent
+          image: your-registry/granite-copilot-doc-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: auto-fix-agent
+          image: your-registry/granite-copilot-auto-fix-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+            - name: WATSONX_APIKEY
+              valueFrom:
+                secretKeyRef:
+                  name: watsonx-credentials
+                  key: apiKey
+            - name: WATSONX_URL
+              valueFrom:
+                secretKeyRef:
+                  name: watsonx-credentials
+                  key: url
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+        - name: observer-agent
+          image: your-registry/granite-copilot-observer-agent:latest
+          env:
+            - name: NATS_URL
+              value: "nats://nats:4222"
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: observer-secrets
+                  key: slackWebhook
+          volumeMounts:
+            - name: agent-config
+              mountPath: /app/config
+              readOnly: true
+
+      volumes:
+        - name: agent-config
+          configMap:
+            name: agents-config
+
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000

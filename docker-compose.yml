@@ -1,0 +1,137 @@
+# docker-compose.yml
+version: "3.9"
+
+services:
+  nats:
+    image: nats:2.9.22
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  neo4j:
+    image: neo4j:5.12
+    environment:
+      NEO4J_AUTH: neo4j/test
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+
+  opa:
+    image: openpolicyagent/opa:0.52.0
+    command:
+      - "run"
+      - "--server"
+      - "--set=decision_logs.console=true"
+      - "--config-file=/config/opa-config.yaml"
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./kubernetes/opa-config.yaml:/config/opa-config.yaml:ro
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile  # assume exists
+    environment:
+      - NATS_URL=nats://nats:4222
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=test
+      - WATSONX_APIKEY=${WATSONX_APIKEY}
+      - WATSONX_URL=${WATSONX_URL}
+      - PROJECT_ID=${PROJECT_ID}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - nats
+      - neo4j
+      - opa
+
+  planner_agent:
+    build:
+      context: ./agents/planner_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+      - WATSONX_APIKEY=${WATSONX_APIKEY}
+      - WATSONX_URL=${WATSONX_URL}
+      - PROJECT_ID=${PROJECT_ID}
+    depends_on:
+      - nats
+
+  build_agent:
+    build:
+      context: ./agents/build_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+
+  test_agent:
+    build:
+      context: ./agents/test_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+
+  security_agent:
+    build:
+      context: ./agents/security_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+
+  compliance_agent:
+    build:
+      context: ./agents/compliance_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      - nats
+      - opa
+
+  doc_agent:
+    build:
+      context: ./agents/doc_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+      - WATSONX_APIKEY=${WATSONX_APIKEY}
+      - WATSONX_URL=${WATSONX_URL}
+      - PROJECT_ID=${PROJECT_ID}
+    depends_on:
+      - nats
+
+  auto_fix_agent:
+    build:
+      context: ./agents/auto_fix_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+      - WATSONX_APIKEY=${WATSONX_APIKEY}
+      - WATSONX_URL=${WATSONX_URL}
+      - PROJECT_ID=${PROJECT_ID}
+    depends_on:
+      - nats
+
+  observer_agent:
+    build:
+      context: ./agents/observer_agent
+    environment:
+      - NATS_URL=nats://nats:4222
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    depends_on:
+      - nats
+
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "3000:3000"
+
+volumes:
+  neo4j-data:

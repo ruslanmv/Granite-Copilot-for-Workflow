@@ -1,0 +1,5 @@
+# agents/observer_agent/requirements.txt
+
+nats-py>=2.4.0
+aiohttp>=3.8.0
+python-dotenv>=1.0.0
