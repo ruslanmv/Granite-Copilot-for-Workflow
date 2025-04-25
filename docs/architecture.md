@@ -42,7 +42,7 @@ This document describes the high-level architecture of Granite Copilot for Workf
 
 ```mermaid
 flowchart LR
-  UserUI[User Interface<br/>(React)] -- “Plan workflow” --> Orchestrator
+  UserUI[User Interface<br/>React] -- "Plan workflow" --> Orchestrator
   Orchestrator -- publish plan --> NATS
   NATS -- subscribe --> PlannerAgent
   PlannerAgent -- DAG JSON --> NATS
