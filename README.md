@@ -1,13 +1,14 @@
 # Granite-Copilot-for-Workflow  
 *A self-correcting, multi-agent automation framework powered by IBM Granite models*
 
----
 
 ## 1. What it is  
 **Granite-Copilot-for-Workflow (GCW)** turns IBM’s open, enterprise-grade **Granite** foundation models into a “copilot” that *plans → executes → verifies → corrects* every step of a business or DevOps workflow.  
-Granite supplies the natural-language reasoning; a mesh of containerised agents (build, test, security, compliance, doc-gen …) supply deterministic checks; the orchestrator keeps looping until everything is green or a human signs off. The result is hands-free pipelines with auditable AI guard-rails. Granite models are available open-source on GitHub and watsonx.ai under Apache-2.0 licences  ([IBM Granite - GitHub](https://github.com/ibm-granite), [Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models)).
+Granite supplies the natural-language reasoning; a mesh of containerised agents (build, test, security, compliance, doc-gen …) supply deterministic checks; the orchestrator keeps looping until everything is green or a human signs off. The result is hands-free pipelines with auditable AI guard-rails.
 
----
+ Granite models are available open-source on GitHub and watsonx.ai under Apache-2.0 licences  ([IBM Granite - GitHub](https://github.com/ibm-granite), [Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models)).
+
+
 
 ## 2. Top-level Features  
 | Capability | How GCW does it |
@@ -19,7 +20,7 @@ Granite supplies the natural-language reasoning; a mesh of containerised agents 
 | **Hybrid Deployment** | One-liner **docker-compose up** for laptops; Helm charts for k8s. |
 | **Extensible UI** | React/TypeScript frontend with chat, workflow designer and log viewer. |
 
----
+
 
 ## 3. Example Use-flow  
 
@@ -33,87 +34,7 @@ Granite supplies the natural-language reasoning; a mesh of containerised agents 
 6. **Doc-Gen Agent** uses Granite-Code to draft release notes → **Style Linter** validates.  
 7. Orchestrator marks run complete and posts an audit link in Slack with rule traces.
 
----
-
-## 4. Repository Layout  
-
-```
-granite-copilot-workflow/
-├── .gitignore
-├── LICENSE
-├── README.md
-├── docker-compose.yml
-├── .env.template
-├── orchestrator/
-│   ├── main.py
-│   ├── config.yaml
-│   ├── config.py 
-│   ├── bus.py
-│   ├── llm_client.py
-│   └── graph_tracer.py
-├── agents/
-│   ├── planner_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   ├── build_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   ├── test_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   ├── security_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   ├── compliance_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   ├── doc_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   ├── auto_fix_agent/
-│   │   ├── agent.py
-│   │   ├── requirements.txt
-│   │   └── Dockerfile
-│   └── observer_agent/
-│       ├── agent.py
-│       ├── requirements.txt
-│       └── Dockerfile
-├── frontend/
-│   ├── package.json
-│   ├── tsconfig.json               
-│   ├── vite.config.ts              
-│   └── src/
-│       ├── App.tsx
-│       └── components/
-│           ├── ChatWindow.tsx
-│           ├── WorkflowDesigner.tsx
-│           └── LogsViewer.tsx
-├── examples/
-│   ├── nightly_build.yaml
-│   └── quickstart.sh
-├── docs/
-│   ├── architecture.md
-│   ├── extending.md
-│   └── api_reference.md
-├── kubernetes/
-│   ├── orchestrator-deployment.yaml
-│   ├── agents-statefulset.yaml
-│   └── nats-neo4j-opa.yaml
-└── policies/                       
-    └── compliance/                 
-        └── policy.rego            
-
-```
-
----
-
-## 5. Setup & Quick-start  
+## 4. Setup & Quick-start  
 
 ```bash
 # 1. Clone and configure
@@ -134,9 +55,8 @@ open http://localhost:3000
 
 *In VS Code?* – install the **“GCW-CLI”** extension and run `GCW: New Workflow` to chat-design a pipeline inside your repo.  
 
----
 
-## 6. Core Configuration  
+## 5. Core Configuration  
 
 ```yaml
 # orchestrator/config.yaml
@@ -165,9 +85,7 @@ graph:
 
 Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `verify.security.*`.
 
----
-
-## 7. Developing New Agents  
+## 6. Developing New Agents  
 
 1. **Create a container** exposing `/app/agent.py` with a class that implements  
    ```python
@@ -177,9 +95,8 @@ Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `ve
 3. **Publish** Docker image and add to `docker-compose.override.yml`.  
 4. **Declare verify rules** (if needed) in `opa/policies/` – the orchestrator pushes artefacts to OPA automatically.
 
----
 
-## 8. Verification Toolkit Out-of-the-box  
+## 7. Verification Toolkit Out-of-the-box  
 
 | Check | Tool |
 |-------|------|
@@ -190,9 +107,7 @@ Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `ve
 | Doc style & term ontology | Vale + company-term OWL |
 | Governance | SPDX SBOM diff |
 
----
-
-## 9. How to Extend Workflows  
+## 8. How to Extend Workflows  
 
 * **Add human approvals:** Set `requires_approval: true` in DAG YAML to pause and ping Slack (Observer Agent).  
 * **Conditionals & loops:** Use Jinja-style expressions in YAML; Planner Agent expands them.  
@@ -200,7 +115,7 @@ Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `ve
 
 ---
 
-## 10. CI for GCW itself  
+## 9. CI for GCW itself  
 
 * `pre-commit` with Ruff, Black, and Reuse-lint.  
 * GitHub Actions matrix tests for Python 3.10-3.12.  
@@ -209,7 +124,7 @@ Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `ve
 
 ---
 
-## 11. Roadmap  
+## 10. Roadmap  
 
 | Quarter | Milestone |
 |---------|-----------|
@@ -220,13 +135,13 @@ Agents auto-discover tasks by subscribing to subjects like `task.build.*` or `ve
 
 ---
 
-## 12. Contributing  
+## 11. Contributing  
 
 PRs welcome! Start with `docs/extending.md`, sign the CLA, follow commit style `feat(scope): msg`. We run DCO checks.
 
 ---
 
-## 13. License  
+## 12. License  
 
 Apache 2.0 (same as Granite models)  ([Foundation Models - IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai/foundation-models))
 
