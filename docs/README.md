@@ -112,6 +112,7 @@ kubectl apply -f kubernetes/agents-statefulset.yaml
 ---
 
 ## 9 . Need help?
-* **Docs:** see `docs/architecture.md`, `docs/api_reference.md`, `docs/extending.md`.  
+* **Docs:** see [`docs/architecture.md`](architecture.md), [`docs/api_reference.md`](api_reference.md), [`docs/extending.md`](extending.md),[`docs/example.md`](example.md). 
+   
 * **Issues / PRs:** open on the GitHub repo.  
 * **Community:** #granite-copilot on IBM-slack / Discord.

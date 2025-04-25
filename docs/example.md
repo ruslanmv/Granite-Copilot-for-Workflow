@@ -1,57 +1,63 @@
-# Granite-Copilot-for-Workflow – Hands-On Examples  
-*A quick tour from “docker compose up” to fully-verified deployments.*
+# Granite-Copilot-for-Workflow — Hands-On Examples  
+*A step-by-step tour from `docker compose up` to self-healing pipelines.*
 
 ---
 
-## 0 . Prerequisites  
+## 0 · Prerequisites
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Docker / Docker Compose | 20.10+ | Compose V2 syntax (`docker compose …`). |
-| Git | 2.30+ | To clone the repo. |
-| IBM Cloud / watsonx.ai API key *or* local Granite model |   | Copy values into `.env`. |
-| (Optional) Node 18+ / Python 3.11+ | For agents you may extend. |
+| Tool                              | Version | Notes                                                         |
+|-----------------------------------|---------|---------------------------------------------------------------|
+| Docker / Docker Compose           | 20.10+  | Compose V2 syntax (`docker compose …`).                       |
+| Git                                | 2.30+  | To clone the repo.                                            |
+| IBM Cloud / watsonx.ai API key **or** local Granite model | — | Copy creds into `.env`.                                       |
+| (Optional) Node 18+ / Python 3.11+ | —       | For extending agents or the frontend.                         |
 
 ---
 
-## 1 . Clone & Launch  
+## 1 · Clone & Launch
 
 ```bash
-git clone https://github.com/your-org/granite-copilot-workflow.git
+git clone https://github.com/ruslanmv/granite-copilot-workflow.git
 cd granite-copilot-workflow
-cp .env.template .env                 # add WATSONX_APIKEY=<…>
-docker compose build
+
+# copy secrets template ➜ edit WATSONX_APIKEY, etc.
+cp .env.template .env
+
+docker compose build     # first run: ~1 GB images
 docker compose up -d
 ```
 
-*When all containers are healthy, open <http://localhost:3000>.*  
-You should see the **GCW Dashboard** with:
+Open **<http://localhost:3000>** when the containers are healthy.  
+You’ll see:
 
-* **Chat panel** – talk to the copilot.  
-* **Workflow Designer** – drag-and-drop or paste YAML.  
-* **Run Log** – real-time status + Neo4j provenance link.
+* **Chat** — natural-language prompts.  
+* **Workflow Designer** — YAML / drag-and-drop DAG editor.  
+* **Logs Viewer** — live task output and Neo4j provenance links.
 
 ---
 
-## 2 . Example #1 – Nightly Build → Security Scan → Staging Deploy  
+## 2 · Example #1 — Nightly Build ➡ Security Scan ➡ Staging Deploy
 
-### 2.1 Describe the Goal (Chat)  
+### 2.1 Describe the Goal (Chat)
 
-> **You:** “Every night at 02:00 UTC build the `main` branch of repo `acme-api`, run unit tests, dependency scan, generate release notes, and deploy to the `staging` namespace only if everything passes.”
+```
+“Every night at 02:00 UTC build the main branch of repo acme-api,
+run unit tests, dependency scan, generate release notes,
+and deploy to the staging namespace only if everything passes.”
+```
 
-### 2.2 What Happens  
+### 2.2 What Happens
 
-1. **Planner Agent** (Granite) turns your sentence into the DAG below.  
-2. **Orchestrator** schedules tasks through NATS.  
-3. **Build / Test / Security Agents** run in parallel.  
-4. **Verification Agents** sign off; if green → `deploy_staging`.  
-5. **Doc Agent** pushes release notes to Confluence.  
-6. **Observer Agent** sends Slack summary + a Neo4j link.
+1. **PlannerAgent** (Granite 13 B) converts the sentence to a DAG.  
+2. **Orchestrator** writes a `Run` node in Neo4j and schedules tasks via NATS.  
+3. **Build / Test / Security** agents run in parallel.  
+4. If all pass ➜ **DeployAgent** performs `helm upgrade`.  
+5. **DocAgent** drafts release notes and publishes to Confluence.  
+6. **ObserverAgent** pushes a Slack summary with the Neo4j run-URL.
 
-### 2.3 Generated DAG (auto-saved in Neo4j & S3)  
+### 2.3 Generated DAG (auto-saved in Neo4j + MinIO)
 
 ```yaml
-# nightly_build.yaml
 name: nightly-acme-api
 schedule: "0 2 * * *"        # cron UTC
 tasks:
@@ -88,13 +94,11 @@ tasks:
     needs: [deploy_staging]
 ```
 
-*(The YAML is produced by the LLM; you can tweak it in the UI before saving.)*
+*(You can tweak YAML in the Designer before saving.)*
 
 ---
 
-## 3 . Example #2 – Instant Ad-hoc Workflow with CLI  
-
-Sometimes chat is overkill. The GCW CLI lets you fire one-liner workflows.
+## 3 · Example #2 — One-Line Ad-hoc Workflow via CLI
 
 ```bash
 gcw run \
@@ -104,56 +108,44 @@ gcw run \
   --task k6-load,url=https://staging.api.acme.local,hatch_rate=50
 ```
 
-The CLI wraps each `--task` into a DAG node and streams logs until finished.  
-Artifacts and traces still land in Neo4j + MinIO.
+The CLI converts each `--task` into DAG nodes, streams logs, and writes provenance.
 
 ---
 
-## 4 . Example #3 – Failure & Auto-Fix Loop  
+## 4 · Example #3 — Failure → Auto-Fix Loop
 
-1. **Scenario:** `dep_scan` flags CVE-2025-12345 in `express 4.17.1`.  
-2. **Auto-Fix Agent** prompts Granite:
+1. `dep_scan` flags **CVE-2025-12345** in `express 4.17.1`.  
+2. **AutoFixAgent** prompts Granite:  
+   > “Upgrade express to the nearest secure minor version preserving semver.”  
+3. Granite suggests `4.18.5`, patches `package.json`.  
+4. Orchestrator re-queues *build → tests → dep_scan*.  
+5. If still vulnerable, AutoFix escalates on Slack:
 
-   ```
-   "Upgrade express to the nearest secure minor version preserving semver."
-   ```
-
-3. Granite suggests **4.18.5** and patches `package.json`.  
-4. **Orchestrator** reruns *build → tests → dep_scan.*  
-5. If still failing, the agent escalates on Slack with a trace:
-
-   > `express 4.18.5` still vulnerable. Manual decision required.  
-   > `gcw logs run/abc123` for details.
+   > *express 4.18.5 still vulnerable. Manual decision required.*  
+   > `gcw logs run/abc123`  
 
 ---
 
-## 5 . Inspecting Provenance  
+## 5 · Inspecting Provenance
 
-*Each run* is a node in Neo4j with relationships:
-
-```
-(:Run {id:"abc123"})-[:HAS_TASK]->(:Task {id:"unit_tests"})-[:USED_AGENT]->(:Agent {name:"pytest"})
-```
-
-Open **Neo4j Browser** at <http://localhost:7474> and execute:
+Neo4j Browser (http://localhost:7474):
 
 ```cypher
 MATCH (r:Run {id:"abc123"})--(n) RETURN r,n
 ```
 
-You’ll see the graph of tasks, agents, and test verdicts—ideal for audits.
+This shows `Run → Task → Agent` relations for audits.
 
 ---
 
-## 6 . Adding Your Own Agent (2 mins)  
+## 6 · Adding Your Own Agent (2 min demo)
 
 ```bash
 cd agents
-copilot new my_static_analysis_agent
-# scaffold creates Dockerfile + agent.py
+copilot new my_static_analysis_agent    # scaffolds files
 ```
 
-*agent.py* skeleton:
+*`agent.py` skeleton*
 
 ```python
 class MyStaticAnalysisAgent(BaseAgent):
@@ -162,18 +154,17 @@ class MyStaticAnalysisAgent(BaseAgent):
     async def handle(self, task):
         repo = task["workspace"]
         result = subprocess.run(["mytool", repo], capture_output=True)
-        status = "pass" if result.returncode == 0 else "fail"
-        return {"status": status, "log": result.stdout.decode()}
+        ok = result.returncode == 0
+        return {"status": "pass" if ok else "fail",
+                "log": result.stdout.decode()}
 ```
-
-Build & plug in:
 
 ```bash
 docker build -t gcw/mytool-agent .
 docker compose up -d mytool-agent
 ```
 
-Add to DAG:
+Update DAG:
 
 ```yaml
 - id: my_static_analysis
@@ -183,30 +174,30 @@ Add to DAG:
 
 ---
 
-## 7 . Clean-up  
+## 7 · Clean-up
 
 ```bash
-docker compose down -v    # stop & remove volumes
-rm -rf neo4j/data/*       # wipe provenance if you like
+docker compose down -v   # stop & remove volumes
+rm -rf neo4j-data/*      # wipe provenance (optional)
 ```
 
 ---
 
-## 8 . Troubleshooting  
+## 8 · Troubleshooting
 
-| Symptom | Fix |
-|---------|-----|
-| “LLM timeout” | Increase `llm.timeout` in `orchestrator/config.yaml` or use local Granite 3 B. |
-| Circular dependencies | CLI: `gcw dag lint nightly_build.yaml` |
-| Agent can’t reach bus | Check `NATS_URL` env & docker network. |
+| Symptom                | Fix |
+|------------------------|-----|
+| **LLM timeout**        | Increase `llm.timeout_secs` in `orchestrator/config.yaml`, or switch to a smaller model. |
+| **Circular dependencies** | `gcw dag lint nightly_build.yaml` |
+| **Agent can’t reach NATS** | Verify `NATS_URL` in agent env, check Docker network. |
 
 ---
 
-## 9 . Next Steps  
+## 9 · Next Steps
 
-* **Bring your own Granite model.** Drop the GGUF into `models/` and set `provider: local`.  
-* **Hook up Jira.** Enable the *ticket-agent* to auto-create tickets on failures.  
-* **Scale out.** Apply the Kubernetes manifests in `kubernetes/`.  
-* **PRs welcome!** See [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+* **Bring your own Granite model:** drop a GGUF into `models/` and set `llm.provider: local`.  
+* **Integrate Jira:** add a `jira_agent`, subscribe to `task.jira.create.request`.  
+* **Scale:** apply manifests in `kubernetes/` on your cluster.  
+* **Contribute:** see [`docs/extending.md`](../docs/extending.md).
 
-Happy automating! 🚀
+```
